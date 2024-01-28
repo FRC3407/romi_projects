@@ -53,7 +53,7 @@ public class Chassis extends SubsystemBase {
     // Invert right side since motor is flipped
     m_rightMotor.setInverted(true);
 
-    m_odometry = new DifferentialDriveOdometry(m_gyro.getRotation2d(), 0.0, 0.0);
+    m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(m_gyro.getAngle()), 0.0, 0.0);
   }
 
   /** Drive the robot based on values in the range -1.0 to 1.0. */

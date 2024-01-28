@@ -4,20 +4,13 @@
 
 package frc.robot;
 
-import static frc.robot.Constants.*;
-
 import java.nio.file.Path;
 
-import com.pathplanner.lib.server.PathPlannerServer;
-
-import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.util.Config;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -37,7 +30,9 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
-    
+    // Instantiate our RobotContainer. This will perform all our button bindings,
+    // and put our autonomous chooser on the dashboard.
+
     final Path configFile = Filesystem.getDeployDirectory().toPath().resolve("config.properties");
     if (RobotBase.isReal()) {
       Constants.init(configFile.toString(),
@@ -45,19 +40,6 @@ public class Robot extends TimedRobot {
           "/u/config.properties");
     } else {
       Constants.init(configFile.toString());
-    }
-
-    if (LOGGING) {
-      DataLogManager.start(LOG_DIR);
-      DataLogManager.logNetworkTables(LOGGING_NT);
-      if (LOGGING_DS) {
-        DriverStation.startDataLog(DataLogManager.getLog());
-      }
-      Config.forEach((key, value) -> DataLogManager.log(key + "=" + value));
-    }
-
-    if (PATH_PLANNER_SERVER) {
-      PathPlannerServer.startServer(5811);
     }
 
     robotContainer = new RobotContainer();
@@ -119,7 +101,6 @@ public class Robot extends TimedRobot {
     if (autonomousCommand != null) {
       autonomousCommand.cancel();
     }
-    robotContainer.resetRobot();
   }
 
   /** This function is called periodically during operator control. */

@@ -5,7 +5,7 @@ import edu.wpi.first.math.controller.RamseteController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.trajectory.Trajectory;
-import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RamseteCommand;
 import frc.robot.subsystems.Chassis;
 
@@ -14,7 +14,7 @@ import static frc.robot.Constants.*;
 /**
  * Abstract parent class for all other path following commands.
  */
-public abstract class AbstractTrajectoryCommand extends CommandBase {
+public abstract class AbstractTrajectoryCommand extends Command {
 
   protected final Chassis chassis;
   protected Trajectory trajectory = null;

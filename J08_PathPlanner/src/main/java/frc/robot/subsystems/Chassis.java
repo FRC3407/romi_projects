@@ -6,19 +6,28 @@ package frc.robot.subsystems;
 
 import static frc.robot.Constants.*;
 
+import java.util.Optional;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.FollowPathRamsete;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.util.ReplanningConfig;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
-import edu.wpi.first.util.datalog.DoubleArrayLogEntry;
-import edu.wpi.first.util.datalog.DoubleLogEntry;
-import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.romi.RomiGyro;
 import edu.wpi.first.wpilibj.romi.RomiMotor;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Chassis extends SubsystemBase {
@@ -42,40 +51,58 @@ public class Chassis extends SubsystemBase {
   // Odometry class for tracking robot pose
   private final DifferentialDriveOdometry m_odometry;
 
+  // Kinimatics class translates chassis speeds to wheel speeds
+  private final DifferentialDriveKinematics m_kinematics;
+
+  // Configuration for path replanning
+  private final ReplanningConfig m_replanningConfig;
+
   // Also show a field diagram
   private final Field2d m_field2d = new Field2d();
-
-  private DoubleLogEntry leftMotorLog;
-  private DoubleLogEntry rightMotorLog;
-  private DoubleArrayLogEntry odometryLog;
 
   /** Creates a new RomiDrivetrain. */
   public Chassis() {
     m_leftEncoder.setDistancePerPulse((Math.PI * ROMI_WHEEL_DIAMETER_METER) / ROMI_COUNTS_PER_REVOLUTION);
     m_rightEncoder.setDistancePerPulse((Math.PI * ROMI_WHEEL_DIAMETER_METER) / ROMI_COUNTS_PER_REVOLUTION);
     resetEncoders();
-    m_gyro.reset();
     resetGyro();
 
     // Invert right side since motor is flipped
     m_rightMotor.setInverted(true);
 
-    m_odometry = new DifferentialDriveOdometry(m_gyro.getRotation2d(), 0.0, 0.0);
+    m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(m_gyro.getAngle()), 0.0, 0.0);
+    m_kinematics = new DifferentialDriveKinematics(RAMSETE_TRACK_WIDTH_METERS);
+    m_replanningConfig = new ReplanningConfig();
 
-    if (LOGGING) {
-      leftMotorLog = new DoubleLogEntry(DataLogManager.getLog(), "/chassis/leftMotors");
-      rightMotorLog = new DoubleLogEntry(DataLogManager.getLog(), "/chassis/rightMotors");
-      odometryLog = new DoubleArrayLogEntry(DataLogManager.getLog(), "/chassis/Odometry");
-    }
+    AutoBuilder.configureRamsete(
+        this::getPose,
+        this::resetPose,
+        this::getCurrentSpeeds,
+        this::drive,
+        m_replanningConfig,
+        this::isRedAlliance,
+        this);
   }
 
-  /** Drive the robot based on values in the range -1.0 to 1.0. */
-  public void arcadeDrive(double speed, double rotation) {
-    m_diffDrive.arcadeDrive(speed, -1 * rotation);
+  public void drive(ChassisSpeeds chassisSpeeds) {
+    DifferentialDriveWheelSpeeds wheelSpeeds = m_kinematics.toWheelSpeeds(chassisSpeeds);
+    tankDriveVolts(RAMSETE_MAX_VOLTAGE * wheelSpeeds.leftMetersPerSecond / ROBOT_MAX_SPEED,
+        RAMSETE_MAX_VOLTAGE * wheelSpeeds.rightMetersPerSecond / ROBOT_MAX_SPEED);
   }
 
   public void stop() {
-    m_diffDrive.arcadeDrive(0, 0);
+    tankDriveVolts(0, 0);
+  }
+
+  private ChassisSpeeds getCurrentSpeeds() {
+    return m_kinematics.toChassisSpeeds(getWheelSpeeds());
+  }
+
+  private boolean isRedAlliance() {
+    Optional<Alliance> alliance = DriverStation.getAlliance();
+    return (alliance.isPresent())
+        ? (alliance.get() == DriverStation.Alliance.Red)
+        : false;
   }
 
   /** Reset left and right encoder distances to zero. */
@@ -108,16 +135,6 @@ public class Chassis extends SubsystemBase {
     return m_gyro.getAngle();
   }
 
-  /** @return current pitch angle in degrees. */
-  public double getPitch() {
-    return m_gyro.getAngleY();
-  }
-
-  /** @return current pitch angle in degrees. */
-  public double getRoll() {
-    return m_gyro.getAngleX();
-  }
-
   @Override
   public void periodic() {
     // Update the odometry
@@ -129,12 +146,6 @@ public class Chassis extends SubsystemBase {
     // Also update the Field2D object (so that we can visualize this in sim)
     Pose2d currentPose = getPose();
     m_field2d.setRobotPose(currentPose);
-
-    if (LOGGING) {
-      leftMotorLog.append(m_leftEncoder.getRate());
-      rightMotorLog.append(m_rightEncoder.getRate());
-      logOdometry(currentPose);
-    }
 
     if (DEBUG) {
       SmartDashboard.putNumber("angle", getAngle());
@@ -177,17 +188,9 @@ public class Chassis extends SubsystemBase {
    *
    * @param pose The pose to which to set the odometry, in radians and meters.
    */
-  public void resetOdometry(Pose2d pose) {
+  public void resetPose(Pose2d pose) {
     resetEncoders();
     Rotation2d gyroAngleRadians = Rotation2d.fromDegrees(-getAngle());
     m_odometry.resetPosition(gyroAngleRadians, 0.0, 0.0, pose);
-  }
-
-  private void logOdometry(Pose2d pose) {
-    double[] data = new double[3];
-    data[0] = pose.getX();
-    data[1] = pose.getY();
-    data[2] = pose.getRotation().getRadians();
-    odometryLog.append(data);
   }
 }

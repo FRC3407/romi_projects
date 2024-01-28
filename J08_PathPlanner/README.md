@@ -1,6 +1,6 @@
 # Path Following with PathPlanner
 
-This project runs experiments with the RamseteCommand with [PathPlanner](https://github.com/mjansen4857/pathplanner/wiki).  PathPlanner can be downloaded from the Microsoft Store or the Apple App Store.
+This project runs experiments with [PathPlanner](https://pathplanner.dev/) and the [Ramsete Command](https://pathplanner.dev/pplib-build-an-auto.html#ramsete-differential).  The PathPlanner application can be downloaded from the Microsoft Store or the Apple App Store.
 
 If you specify PathPlanner's project as being your WPILib robotics directory, PathPlanner will manage its trajectories as JSON files under `src/main/deploy/pathplanner`.
 
@@ -10,16 +10,21 @@ If you specify PathPlanner's project as being your WPILib robotics directory, Pa
 
 Trajectories can be created and edited within the PathPlanner app.  The can also be constructed manually in code.
 
-Here's an example:
-The first waypoint will be 0.6 meters forward and 0.3 meters to the right (about 2 feet forward and 1 foot right).  The second waypoint will be 1 meter forward of the starting point.  The third waypoint will be heading back towards the starting point but to the left of the start.  The ending point should be even with the starting point but 0.3 meters to the left.
+Here's an manually constructed example with two waypoints:
 ```java
-    PathPlannerTrajectory loopTrajectory = PathPlanner.generatePath(
-        pathConstraints,
-        new PathPoint(new Translation2d(0.0, 0.0), Rotation2d.fromDegrees(0)), 
-        new PathPoint(new Translation2d(0.6, -0.3), Rotation2d.fromDegrees(0)), 
-        new PathPoint(new Translation2d(1.0, 0.0), Rotation2d.fromDegrees(90)), 
-        new PathPoint(new Translation2d(0.6, 0.3), Rotation2d.fromDegrees(180)), 
-        new PathPoint(new Translation2d(0.1, 0.3), Rotation2d.fromDegrees(180)), 
-        new PathPoint(new Translation2d(0.0, 0.3), Rotation2d.fromDegrees(180)) 
-    );
+    Pose2d currentPose = chassis.getPose();
+
+    Pose2d startPos = new Pose2d(currentPose.getTranslation(), new Rotation2d());
+    Pose2d endPos = new Pose2d(currentPose.getTranslation().plus(new Translation2d(2.0, 0.0)), new Rotation2d());
+
+    List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(startPos, endPos);
+    PathPlannerPath path = new PathPlannerPath(
+        bezierPoints,
+        new PathConstraints(
+            ROBOT_MAX_SPEED, ROBOT_MAX_ACCELLERATION,
+            ROBOT_ANGULAR_MAX_SPEED, ROBOT_MAX_ANGULAR_ACCELLERATION),
+        new GoalEndState(0.0, currentPose.getRotation()));
+    path.preventFlipping = true;
+
+    Command followCommand = AutoBuilder.followPath(path);
 ```

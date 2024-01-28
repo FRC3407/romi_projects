@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.romi.RomiMotor;
 
-
 import static frc.robot.Constants.*;
 
 /**

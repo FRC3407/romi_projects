@@ -9,7 +9,6 @@ import static frc.robot.util.Config.loadConfiguration;
 import static frc.robot.util.Config.printPreferences;
 
 import edu.wpi.first.wpilibj.Preferences;
-import edu.wpi.first.wpilibj.RobotBase;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide
@@ -23,47 +22,29 @@ import edu.wpi.first.wpilibj.RobotBase;
  */
 public final class Constants {
 
-    /** DEBUG enables extra debug printing and Shuffleboard widgets. */
+    /** DEBUG enables extra logging and Shuffleboard widgets. */
     public static boolean DEBUG = false;
-
-    /** LOGGING enables {@code DataLogManager} logging. */
-    public static boolean LOGGING = false;
-    public static boolean LOGGING_NT = false;
-    public static boolean LOGGING_DS = true;
-    public static String LOG_DIR = "";
-
-    public static boolean PATH_PLANNER_SERVER = false;
 
     public static final double ROMI_COUNTS_PER_REVOLUTION = 1440.0;
     public static final double ROMI_WHEEL_DIAMETER_INCH = 2.75591; // 70 mm
     public static final double ROMI_WHEEL_DIAMETER_METER = 0.07;
+    public static final double RAMSETE_TRACK_WIDTH_METERS = 0.142072613;
+    public static final double RAMSETE_MAX_VOLTAGE = 10.0;
 
     /** Maximum robot speed in meters per second. */
     public static final double ROBOT_MAX_SPEED = 0.8;
     /** Maximum robot accelleration in meters per second squared. */
     public static final double ROBOT_MAX_ACCELLERATION = 0.8;
-
-    public static final double RAMSETE_CONTROLLER_B = 2.0;
-    public static final double RAMSETE_CONTROLLER_ZETA = 0.7;
-    public static final double RAMSETE_PID_P = 0.085;
-    public static final double RAMSETE_PID_I = 0.0;
-    public static final double RAMSETE_PID_D = 0.0;
-    public static final double RAMSETE_FF_VOLTS = 0.929;
-    public static final double RAMSETE_FF_VOLT_SECS_PER_METER = 6.33;
-    public static final double RAMSETE_FF_VOLT_SECS_SQUARED_PER_METER = 0.0389;
-    public static final double RAMSETE_TRACK_WIDTH_METERS = 0.142072613;
-    public static final double RAMSETE_MAX_VOLTAGE = 10.0;
+    /** Maximum angular speed in radians per second. */
+    public static final double ROBOT_ANGULAR_MAX_SPEED = 1.0;
+    /** Maximum angular accelleration in radians per second squared. */
+    public static final double ROBOT_MAX_ANGULAR_ACCELLERATION = 1.0;
 
     public static void init(String... fileNames) {
         cleanAllPreferences();
         loadConfiguration(fileNames);
         printPreferences(System.out);
 
-        DEBUG = Preferences.getBoolean("DEBUG", DEBUG);
-        LOGGING = Preferences.getBoolean("LOGGING", LOGGING);
-        LOG_DIR = Preferences.getString("LOG_DIR", RobotBase.isSimulation() ? "logs" : "");
-        LOGGING_NT = Preferences.getBoolean("LOGGING_NT", LOGGING_NT);
-        LOGGING_DS = Preferences.getBoolean("LOGGING_DS", LOGGING_DS);
-        PATH_PLANNER_SERVER = Preferences.getBoolean("PATH_PLANNER_SERVER", PATH_PLANNER_SERVER);
+        DEBUG = Preferences.getBoolean("DEBUG", false);
     }
 }

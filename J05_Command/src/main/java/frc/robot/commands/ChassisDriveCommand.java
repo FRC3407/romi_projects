@@ -4,10 +4,10 @@ import frc.robot.subsystems.Chassis;
 
 import java.util.function.Supplier;
 
-import edu.wpi.first.wpilibj2.command.CommandBase;
+import edu.wpi.first.wpilibj2.command.Command;
 
 /** Default command to drive the Chassis. */
-public class ChassisDriveCommand extends CommandBase {
+public class ChassisDriveCommand extends Command {
 
   private final Chassis chassis;
   private final Supplier<Double> speedSupplier;
